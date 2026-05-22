@@ -148,9 +148,12 @@ impl Instance {
           num_cons_padded = 2;
         }
 
-        // ensure that num_cons_padded is power of 2
-        if num_cons.next_power_of_two() != num_cons {
-          num_cons_padded = num_cons.next_power_of_two();
+        // ensure that num_cons_padded is a power of 2.
+        // Note: this check must be performed on `num_cons_padded` (not the original
+        // `num_cons`), otherwise the previous bump-to-2 step can be silently undone
+        // when num_cons == 0 (next_power_of_two(0) == 1).
+        if num_cons_padded.next_power_of_two() != num_cons_padded {
+          num_cons_padded = num_cons_padded.next_power_of_two();
         }
         num_cons_padded
       };

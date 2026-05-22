@@ -1619,7 +1619,10 @@ mod tests {
     );
 
     // commitment
-    let (poly_comm, dense) = SparseMatPolynomial::multi_commit(&[&poly_M, &poly_M, &poly_M], &gens);
+    // The R1CS-Lite variant of the sparse-poly evaluation proof works with N real sparse
+    // matrices plus one "ghost" evaluation (sumcheck batch_size = sparse_polys.len() + 1).
+    // We therefore commit to 2 matrices but supply 3 evaluations below.
+    let (poly_comm, dense) = SparseMatPolynomial::multi_commit(&[&poly_M, &poly_M], &gens);
 
     // evaluation
     let rx: Vec<Scalar> = (0..num_vars_x)

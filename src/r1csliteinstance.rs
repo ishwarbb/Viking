@@ -238,8 +238,10 @@ impl R1CSLiteInstance {
   }
 
   fn pad(&self, z: Vec<Scalar>) -> Vec<Scalar> {
-    // Pad z to self.num_vars + 2 size
-    assert!(self.num_vars + 2 > z.len());
+    // Pad the variables vector z to length self.num_vars (the padded variable count).
+    // The caller is expected to pass z with z.len() <= self.num_vars; otherwise the
+    // subtraction below would underflow.
+    assert!(z.len() <= self.num_vars);
 
     let padded_z = {
       let mut padded_z = z.clone();
@@ -278,7 +280,11 @@ impl R1CSLiteInstance {
 
     assert_eq!(Az.len(), self.num_cons);
     assert_eq!(Bz.len(), self.num_cons);
-    (0..vars.len()).all(|i| Az[i] * Bz[i] == unpad_z[i])
+    // R1CS-Lite constraint: for every (unpadded) constraint i, A_i * B_i == z[i]
+    // where z is the unpadded witness vector [vars, 1, inputs].
+    // We must check ALL unpadded constraints (not just those producing variables),
+    // including the ones that pin down the constant and inputs.
+    (0..self.num_unpadded_cons).all(|i| Az[i] * Bz[i] == unpad_z[i])
   }
 
   pub fn multiply_vec(
@@ -293,8 +299,18 @@ impl R1CSLiteInstance {
 
     let z_vec: Vec<Scalar> = z.iter().cloned().collect();
 
+    // Build the "projected" witness z_new used by R1CS-Lite's sumcheck.
+    // The implicit C matrix picks vars[0..num_unpadded_vars] from the witness for the
+    // first num_unpadded_vars constraints, then picks [1, inputs...] starting at index
+    // num_vars (the padded boundary, where the constant lives) for the remaining
+    // (num_unpadded_cons - num_unpadded_vars) constraints. The rest is padded with zeros.
     let mut z_new: Vec<_> = z_vec.iter().take(self.num_unpadded_vars).cloned().collect();
-    z_new.extend(z_vec.iter().skip(num_rows).take(self.num_unpadded_cons - self.num_unpadded_vars));
+    z_new.extend(
+      z_vec
+        .iter()
+        .skip(self.num_vars)
+        .take(self.num_unpadded_cons - self.num_unpadded_vars),
+    );
     z_new.extend(vec![Scalar::zero(); num_rows - z_new.len()]);
 
     (
