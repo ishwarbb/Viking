@@ -1,13 +1,17 @@
-# Spartan: High-speed zkSNARKs without trusted setup
+# Viking: Spartan with R1CS-Lite
 
 ![Rust](https://github.com/microsoft/Spartan/workflows/Rust/badge.svg)
 [![](https://img.shields.io/crates/v/spartan.svg)](<(https://crates.io/crates/spartan)>)
 
-Spartan is a high-speed zero-knowledge proof system, a cryptographic primitive that enables a prover to prove a mathematical statement to a verifier without revealing anything besides the validity of the statement. This repository provides `libspartan,` a Rust library that implements a zero-knowledge succinct non-interactive argument of knowledge (zkSNARK), which is a type of zero-knowledge proof system with short proofs and fast verification times. The details of the Spartan proof system are described in our [paper](https://eprint.iacr.org/2019/550) published at [CRYPTO 2020](https://crypto.iacr.org/2020/). The security of the Spartan variant implemented in this library is based on the discrete logarithm problem in the random oracle model.
+Viking is an experimental fork of [Spartan](https://github.com/microsoft/Spartan) that replaces arbitrary three-matrix R1CS with the two-matrix R1CS-Lite representation described in [Lunar](https://eprint.iacr.org/2020/1069). It retains Spartan's transparent setup and proof architecture while making the output matrix a fixed, verifier-derived projection.
+
+Read [R1CS-Lite in Viking](docs/r1cs-lite.md) for the algebra, implementation, measured value, compatibility limits, and soundness requirements. The main benefit is a smaller and simpler statement representation with less explicit matrix commitment work; historical end-to-end timing changes are modest and workload-dependent. See [Viking_Report.pdf](https://github.com/ishwarbb/Viking/blob/master/Viking_Report.pdf) for the original project report and comparison data.
+
+Viking is a research prototype and has not received a security review or audit. Do not use it in production.
+
+Spartan is a high-speed zero-knowledge proof system, a cryptographic primitive that enables a prover to prove a mathematical statement to a verifier without revealing anything besides the validity of the statement. This repository provides `libspartan`, a Rust library that implements a zero-knowledge succinct non-interactive argument of knowledge (zkSNARK). The details of Spartan are described in its [paper](https://eprint.iacr.org/2019/550), published at [CRYPTO 2020](https://crypto.iacr.org/2020/).
 
 A simple example application is proving the knowledge of a secret s such that H(s) == d for a public d, where H is a cryptographic hash function (e.g., SHA-256, Keccak). A more complex application is a database-backed cloud service that produces proofs of correct state machine transitions for auditability. See this [paper](https://eprint.iacr.org/2020/758.pdf) for an overview and this [paper](https://eprint.iacr.org/2018/907.pdf) for details.
-
-Note that this library has _not_ received a security review or audit.
 
 ## Highlights
 
@@ -15,7 +19,7 @@ We now highlight Spartan's distinctive features.
 
 - **No "toxic" waste:** Spartan is a _transparent_ zkSNARK and does not require a trusted setup. So, it does not involve any trapdoors that must be kept secret or require a multi-party ceremony to produce public parameters.
 
-- **General-purpose:** Spartan produces proofs for arbitrary NP statements. `libspartan` supports NP statements expressed as rank-1 constraint satisfiability (R1CS) instances, a popular language for which there exists efficient transformations and compiler toolchains from high-level programs of interest.
+- **Output-form constraints:** Viking supports R1CS-Lite instances whose multiplication outputs occupy designated witness positions. Importing arbitrary three-matrix R1CS requires a frontend transformation; see the design note for details.
 
 - **Sub-linear verification costs:** Spartan is the first transparent proof system with sub-linear verification costs for arbitrary NP statements (e.g., R1CS).
 
