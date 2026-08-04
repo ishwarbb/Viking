@@ -361,11 +361,24 @@ impl R1CSLiteProof {
     &self,
     num_vars: usize,
     num_cons: usize,
+    num_unpadded_vars: usize,
+    num_unpadded_cons: usize,
     input: &[Scalar],
-    evals: &(Scalar, Scalar, Scalar),
+    evals: &(Scalar, Scalar),
     transcript: &mut Transcript,
     gens: &R1CSLiteGens,
   ) -> Result<(Vec<Scalar>, Vec<Scalar>), ProofVerifyError> {
+    if !num_cons.is_power_of_two()
+      || !num_vars.is_power_of_two()
+      || num_vars.checked_mul(2).is_none()
+      || num_unpadded_cons > num_cons
+      || num_unpadded_vars > num_vars
+      || num_unpadded_vars > num_unpadded_cons
+      || input.len() >= num_vars
+    {
+      return Err(ProofVerifyError::InternalError);
+    }
+
     transcript.append_protocol_name(R1CSLiteProof::protocol_name());
 
     input.append_to_transcript(b"input", transcript);
@@ -484,7 +497,15 @@ impl R1CSLiteProof {
     );
 
     // perform the final check in the second sum-check protocol
-    let (eval_A_r, eval_B_r, eval_z_r ) = evals;
+    let (eval_A_r, eval_B_r) = evals;
+    let eval_z_r = R1CSLiteInstance::evaluate_implicit_c(
+      num_cons,
+      num_vars,
+      num_unpadded_cons,
+      num_unpadded_vars,
+      &rx,
+      &ry,
+    );
     let expected_claim_post_phase2 =
       ((r_A * eval_A_r + r_B * eval_B_r + r_z * eval_z_r) * comm_eval_Z_at_ry).compress();
     // verify proof that expected_claim_post_phase1 == claim_post_phase1
@@ -598,6 +619,7 @@ mod tests {
     );
 
     let inst_evals = inst.evaluate(&rx, &ry);
+    let inst_evals_ab = (inst_evals.0, inst_evals.1);
 
 
     let mut verifier_transcript = Transcript::new(b"example");
@@ -605,8 +627,10 @@ mod tests {
       .verify(
         inst.get_num_vars(),
         inst.get_num_cons(),
+        inst.get_num_unpadded_vars(),
+        inst.get_num_unpadded_cons(),
         &input,
-        &inst_evals,
+        &inst_evals_ab,
         &mut verifier_transcript,
         &gens,
       )

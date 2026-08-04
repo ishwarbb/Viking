@@ -299,7 +299,7 @@ impl SNARKGens {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SNARK {
   r1cs_lite_sat_proof: R1CSLiteProof,
-  inst_evals: (Scalar, Scalar, Scalar),
+  inst_evals: (Scalar, Scalar),
   r1cs_lite_eval_proof: R1CSLiteEvalProof,
 }
 
@@ -401,7 +401,7 @@ impl SNARK {
     timer_prove.stop();
     SNARK {
       r1cs_lite_sat_proof,
-      inst_evals,
+      inst_evals: (inst_evals.0, inst_evals.1),
       r1cs_lite_eval_proof,
     }
   }
@@ -426,6 +426,8 @@ impl SNARK {
     let (rx, ry) = self.r1cs_lite_sat_proof.verify(
       comm.comm.get_num_vars(),
       comm.comm.get_num_cons(),
+      comm.comm.get_num_unpadded_vars(),
+      comm.comm.get_num_unpadded_cons(),
       &input.assignment,
       &self.inst_evals,
       transcript,
@@ -434,7 +436,16 @@ impl SNARK {
     timer_sat_proof.stop();
 
     let timer_eval_proof = Timer::new("verify_eval_proof");
-    let (Ar, Br, zr) = &self.inst_evals;
+    let (Ar, Br) = &self.inst_evals;
+    let zr = R1CSLiteInstance::evaluate_implicit_c(
+      comm.comm.get_num_cons(),
+      comm.comm.get_num_vars(),
+      comm.comm.get_num_unpadded_cons(),
+      comm.comm.get_num_unpadded_vars(),
+      &rx,
+      &ry,
+    );
+    let verified_inst_evals = (*Ar, *Br, zr);
     Ar.append_to_transcript(b"Ar_claim", transcript);
     Br.append_to_transcript(b"Br_claim", transcript);
     zr.append_to_transcript(b"zr_claim", transcript);
@@ -442,7 +453,7 @@ impl SNARK {
       &comm.comm,
       &rx,
       &ry,
-      &self.inst_evals,
+      &verified_inst_evals,
       &gens.gens_r1cs_lite_eval,
       transcript,
     )?;
@@ -551,6 +562,7 @@ impl NIZK {
     let timer_eval = Timer::new("eval_sparse_polys");
     let (claimed_rx, claimed_ry) = &self.r;
     let inst_evals = inst.inst.evaluate(claimed_rx, claimed_ry);
+    let inst_evals_ab = (inst_evals.0, inst_evals.1);
     timer_eval.stop();
 
     let timer_sat_proof = Timer::new("verify_sat_proof");
@@ -558,8 +570,10 @@ impl NIZK {
     let (rx, ry) = self.r1cs_lite_sat_proof.verify(
       inst.inst.get_num_vars(),
       inst.inst.get_num_cons(),
+      inst.inst.get_num_unpadded_vars(),
+      inst.inst.get_num_unpadded_cons(),
       &input.assignment,
-      &inst_evals,
+      &inst_evals_ab,
       transcript,
       &gens.gens_r1cs_lite_sat,
     )?;

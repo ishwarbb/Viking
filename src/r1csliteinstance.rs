@@ -52,6 +52,8 @@ pub struct R1CSLiteCommitment {
   num_cons: usize,
   num_vars: usize,
   num_inputs: usize,
+  num_unpadded_cons: usize,
+  num_unpadded_vars: usize,
   comm: SparseMatPolyCommitment,
 }
 
@@ -60,6 +62,8 @@ impl AppendToTranscript for R1CSLiteCommitment {
     transcript.append_u64(b"num_cons", self.num_cons as u64);
     transcript.append_u64(b"num_vars", self.num_vars as u64);
     transcript.append_u64(b"num_inputs", self.num_inputs as u64);
+    transcript.append_u64(b"num_unpadded_cons", self.num_unpadded_cons as u64);
+    transcript.append_u64(b"num_unpadded_vars", self.num_unpadded_vars as u64);
     self.comm.append_to_transcript(b"comm", transcript);
   }
 }
@@ -79,6 +83,14 @@ impl R1CSLiteCommitment {
 
   pub fn get_num_inputs(&self) -> usize {
     self.num_inputs
+  }
+
+  pub fn get_num_unpadded_cons(&self) -> usize {
+    self.num_unpadded_cons
+  }
+
+  pub fn get_num_unpadded_vars(&self) -> usize {
+    self.num_unpadded_vars
   }
 }
 
@@ -336,19 +348,37 @@ impl R1CSLiteInstance {
   }
 
   pub fn evaluate(&self, rx: &[Scalar], ry: &[Scalar]) -> (Scalar, Scalar, Scalar) {
+    let eval_z = Self::evaluate_implicit_c(
+      self.num_cons,
+      self.num_vars,
+      self.num_unpadded_cons,
+      self.num_unpadded_vars,
+      rx,
+      ry,
+    );
+    let evals = SparseMatPolynomial::multi_evaluate(&[&self.A, &self.B], rx, ry);
+    (evals[0], evals[1], eval_z)
+  }
+
+  pub fn evaluate_implicit_c(
+    num_cons: usize,
+    num_vars: usize,
+    num_unpadded_cons: usize,
+    num_unpadded_vars: usize,
+    rx: &[Scalar],
+    ry: &[Scalar],
+  ) -> Scalar {
     let mut C: Vec<SparseMatEntry> = Vec::new();
-    (0..self.num_unpadded_vars).for_each(|i| {
+    (0..num_unpadded_vars).for_each(|i| {
       C.push(SparseMatEntry::new(i, i, Scalar::one()));
     });
-    let gap = self.num_vars - self.num_unpadded_vars;
-    (self.num_unpadded_vars..self.num_unpadded_cons).for_each(|i| {
+    let gap = num_vars - num_unpadded_vars;
+    (num_unpadded_vars..num_unpadded_cons).for_each(|i| {
       C.push(SparseMatEntry::new(i, i + gap, Scalar::one()));
     });
 
-    let sparse_C = SparseMatPolynomial::new(self.num_cons.log_2(), (2 * self.num_vars).log_2(), C);
-
-    let evals = SparseMatPolynomial::multi_evaluate(&[&self.A, &self.B, &sparse_C], rx, ry);
-    (evals[0], evals[1], evals[2])
+    let sparse_C = SparseMatPolynomial::new(num_cons.log_2(), (2 * num_vars).log_2(), C);
+    SparseMatPolynomial::multi_evaluate(&[&sparse_C], rx, ry)[0]
   }
 
   pub fn commit(&self, gens: &R1CSLiteCommitmentGens) -> (R1CSLiteCommitment, R1CSLiteDecommitment) {
@@ -357,6 +387,8 @@ impl R1CSLiteInstance {
       num_cons: self.num_cons,
       num_vars: self.num_vars,
       num_inputs: self.num_inputs,
+      num_unpadded_cons: self.num_unpadded_cons,
+      num_unpadded_vars: self.num_unpadded_vars,
       comm,
     };
 
