@@ -526,37 +526,35 @@ mod tests {
   use rand::rngs::OsRng;
 
   fn produce_tiny_r1cs_lite() -> (R1CSLiteInstance, Vec<Scalar>, Vec<Scalar>) {
-    // ! TODO: Construct the right example later 
-
-    // three constraints over five variables Z1, Z2, Z3, Z4, and Z5
-    // rounded to the nearest power of two
-    let num_unpadded_cons: usize = 128;
-    let num_unpadded_vars: usize = 256;
+    let num_unpadded_cons: usize = 8;
+    let num_unpadded_vars: usize = 5;
     let num_inputs = 2;
+    let num_cons = num_unpadded_cons.next_power_of_two();
+    let num_vars = num_unpadded_vars.next_power_of_two();
+    let constant = num_vars;
+    let input_0 = constant + 1;
+    let input_1 = constant + 2;
 
-    // encode the above constraints into three matrices
     let mut A: Vec<(usize, usize, Scalar)> = Vec::new();
     let mut B: Vec<(usize, usize, Scalar)> = Vec::new();
 
     let one = Scalar::one();
-    // constraint 0 entries
-    // (Z1 + Z2) * I0 - Z3 = 0;
-    A.push((0, 0, one));
-    A.push((0, 1, one));
-    B.push((0, num_unpadded_vars + 1, one));
-
-    // constraint 1 entries
-    // (Z1 + I1) * (Z3) - Z4 = 0
+    A.push((0, input_0, one));
+    B.push((0, input_1, one));
     A.push((1, 0, one));
-    A.push((1, num_unpadded_vars + 2, one));
-    B.push((1, 2, one));
-    // constraint 3 entries
-    // Z5 * 1 - 0 = 0
-    A.push((2, 4, one));
-    B.push((2, num_unpadded_vars, one));
-
-    let num_cons = num_unpadded_cons.next_power_of_two();
-    let num_vars = num_unpadded_vars.next_power_of_two();
+    B.push((1, 0, one));
+    A.push((2, 0, one));
+    A.push((2, 1, one));
+    B.push((2, input_0, one));
+    A.push((3, 0, one));
+    A.push((3, input_1, one));
+    B.push((3, 2, one));
+    A.push((5, constant, one));
+    B.push((5, constant, one));
+    A.push((6, constant, one));
+    B.push((6, input_0, one));
+    A.push((7, constant, one));
+    B.push((7, input_1, one));
 
     let inst = R1CSLiteInstance::new(num_cons, num_vars, num_inputs, &A, &B, num_unpadded_cons, num_unpadded_vars);
 
@@ -564,11 +562,11 @@ mod tests {
     let mut csprng: OsRng = OsRng;
     let i0 = Scalar::random(&mut csprng);
     let i1 = Scalar::random(&mut csprng);
-    let z1 = Scalar::random(&mut csprng);
-    let z2 = Scalar::random(&mut csprng);
-    let z3 = (z1 + z2) * i0; // constraint 1: (Z1 + Z2) * I0 - Z3 = 0;
-    let z4 = (z1 + i1) * z3; // constraint 2: (Z1 + I1) * (Z3) - Z4 = 0
-    let z5 = Scalar::zero(); //constraint 3
+    let z1 = i0 * i1;
+    let z2 = z1 * z1;
+    let z3 = (z1 + z2) * i0;
+    let z4 = (z1 + i1) * z3;
+    let z5 = Scalar::zero();
 
     let mut vars = vec![Scalar::zero(); num_vars];
     vars[0] = z1;
@@ -587,7 +585,7 @@ mod tests {
   #[test]
   fn test_tiny_r1cs_lite() {
     let (inst, vars, input) = tests::produce_tiny_r1cs_lite();
-    let is_sat = inst.is_sat(&vars, &input);
+    let is_sat = inst.is_sat(&vars[..inst.get_num_unpadded_vars()], &input);
     assert!(is_sat);
   }
 

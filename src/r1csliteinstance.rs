@@ -274,6 +274,7 @@ impl R1CSLiteInstance {
   }
 
   pub fn is_sat(&self, vars: &[Scalar], input: &[Scalar]) -> bool {
+    assert_eq!(vars.len(), self.num_unpadded_vars);
     assert_eq!(input.len(), self.num_inputs);
 
     let unpad_z =  self.extend_one_input(vars.to_vec(), input);

@@ -293,15 +293,16 @@ impl SparseMatPolyCommitmentGens {
     num_nz_entries: usize,
     batch_size: usize,
   ) -> SparseMatPolyCommitmentGens {
+    let num_sparse_polys = batch_size - 1;
     let num_vars_ops =
-      num_nz_entries.next_power_of_two().log_2() + (batch_size * 5).next_power_of_two().log_2();
+      num_nz_entries.next_power_of_two().log_2() + (num_sparse_polys * 5).next_power_of_two().log_2();
     let num_vars_mem = if num_vars_x > num_vars_y {
       num_vars_x
     } else {
       num_vars_y
     } + 1;
     let num_vars_derefs =
-      num_nz_entries.next_power_of_two().log_2() + (batch_size * 2).next_power_of_two().log_2();
+      num_nz_entries.next_power_of_two().log_2() + (num_sparse_polys * 2).next_power_of_two().log_2();
 
     let gens_ops = PolyCommitmentGens::new(num_vars_ops, label);
     let gens_mem = PolyCommitmentGens::new(num_vars_mem, label);

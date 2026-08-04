@@ -231,8 +231,8 @@ impl Instance {
     vars: &VarsAssignment,
     inputs: &InputsAssignment,
   ) -> Result<bool, R1CSLiteError> {
-    if vars.assignment.len() > self.inst.get_num_vars() {
-      return Err(R1CSLiteError::InvalidNumberOfInputs);
+    if vars.assignment.len() != self.inst.get_num_unpadded_vars() {
+      return Err(R1CSLiteError::InvalidNumberOfVars);
     }
 
     if inputs.assignment.len() != self.inst.get_num_inputs() {
@@ -667,6 +667,18 @@ mod tests {
     let inst = Instance::new(num_cons, num_vars, num_inputs, &A, &B);
     assert!(inst.is_err());
     assert_eq!(inst.err(), Some(R1CSLiteError::InvalidScalar));
+  }
+
+  #[test]
+  pub fn check_r1cs_lite_invalid_variable_count() {
+    let inst = Instance::new(2, 2, 0, &[], &[]).unwrap();
+    let vars = VarsAssignment::new(&[Scalar::zero().to_bytes()]).unwrap();
+    let inputs = InputsAssignment::new(&[]).unwrap();
+
+    assert_eq!(
+      inst.is_sat(&vars, &inputs),
+      Err(R1CSLiteError::InvalidNumberOfVars)
+    );
   }
 
   #[test]
