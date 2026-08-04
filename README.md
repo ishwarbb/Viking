@@ -1,16 +1,14 @@
-# Viking: A non-malleable zkSNARK without trusted setup using the R1CSLite constraint system
+# Viking: Spartan with R1CS-Lite
 
-Viking is a fork of Spartan with the R1CSLite constraint system instead of R1CS. The `master` branch contains code for the R1CS implementation and the `gp` branch contains the R1CSLite implementation. The R1CSLite implementation, introduced in [Lunar](https://eprint.iacr.org/2020/1069) is a more efficient representation of NP languages for $N > l_{in} + 1$ where $N$ is the number of multiplication gates and $l_{in}$ is the number of input variables.
+Viking is an experimental fork of [Spartan](https://github.com/microsoft/Spartan) that replaces arbitrary three-matrix R1CS with the two-matrix R1CS-Lite representation described in [Lunar](https://eprint.iacr.org/2020/1069). It retains Spartan's transparent setup and proof architecture while making the output matrix a fixed, verifier-derived projection.
 
-Viking is a high-speed zero-knowledge proof system, a cryptographic primitive that enables a prover to prove a mathematical statement to a verifier without revealing anything besides the validity of the statement.  This repository a Rust library that implements a zero-knowledge succinct non-interactive argument of knowledge (zkSNARK), which is a type of zero-knowledge proof system with short proofs and fast verification times. For more details refer to the Report.pdf file in the root directory.
+Read [R1CS-Lite in Viking](docs/r1cs-lite.md) for the algebra, implementation, measured value, compatibility limits, and soundness requirements. The main benefit is a smaller and simpler statement representation with less explicit matrix commitment work. It does not remove a third of total proving time, and historical end-to-end timing changes are modest and workload-dependent.
 
-#### Please note that Viking is  prototype and is not yet ready for production use. We welcome contributions and feedback from the community.
+Viking is a research prototype and has not received a security review or audit. Do not use it in production.
 
-Kindly refer to [Viking_Report.pdf](https://github.com/ishwarbb/Viking/blob/master/Viking_Report.pdf) for a detailed report on the project with both theoretical and technical details.
+See [Viking_Report.pdf](Viking_Report.pdf) for the original theoretical and technical report.
 
-Improvements in Viking - 
-
-### Performance Data Table
+## Historical performance comparison
 
 | Constraint Size | Spartan Proof (ms) | Viking Proof (ms) | Spartan Verify (ms) | Viking Verify (ms) |
 |------------------|---------------------|--------------------|----------------------|---------------------|
@@ -26,12 +24,9 @@ Improvements in Viking -
 | $2^{19}$         | 3,140.600           | 3,115.100          | 208.780              | 209.470             |
 | $2^{20}$         | 6,243.300           | 6,305.700          | 400.220              | 408.920             |
 
-### Notes:
-- The times are measured in milliseconds (ms).
-- The constraint sizes are represented as powers of two, from 2^10 to 2^20.
-- This table provides a clear comparison between Spartan and Viking for both proof and verification times across different constraint sizes.
-
-Some of the key features of Viking that it inherits from Spartan are:
+- Times are in milliseconds and constraint sizes are powers of two.
+- These historical measurements are machine- and workload-specific, not a guarantee of improvement. Viking is faster at many sizes and slower at some; most differences are within a few percent.
+- The structural saving is clearer than the timing table: Viking stores and commits to two application-specific sparse matrices rather than materializing an identity-like third matrix.
 
 ## Highlights
 
@@ -39,7 +34,7 @@ We now highlight Spartan's distinctive features.
 
 - **No "toxic" waste:** Spartan is a _transparent_ zkSNARK and does not require a trusted setup. So, it does not involve any trapdoors that must be kept secret or require a multi-party ceremony to produce public parameters.
 
-- **General-purpose:** Spartan produces proofs for arbitrary NP statements. `libspartan` supports NP statements expressed as rank-1 constraint satisfiability (R1CS) instances, a popular language for which there exists efficient transformations and compiler toolchains from high-level programs of interest.
+- **Output-form constraints:** Viking supports R1CS-Lite instances whose multiplication outputs occupy designated witness positions. Importing arbitrary three-matrix R1CS requires a frontend transformation; see the design note for details.
 
 - **Sub-linear verification costs:** Spartan is the first transparent proof system with sub-linear verification costs for arbitrary NP statements (e.g., R1CS).
 

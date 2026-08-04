@@ -23,7 +23,7 @@ fn nizk_prove_benchmark(c: &mut Criterion) {
     let num_cons = num_vars;
     let num_inputs = 10;
 
-    let (inst, vars, inputs) = Instance::produce_synthetic_r1cs(num_cons, num_vars, num_inputs);
+    let (inst, vars, inputs) = Instance::produce_synthetic_r1cs_lite(num_cons, num_vars, num_inputs);
 
     let gens = NIZKGens::new(num_cons, num_vars, num_inputs);
 
@@ -53,7 +53,7 @@ fn nizk_verify_benchmark(c: &mut Criterion) {
     let num_vars = (2_usize).pow(s as u32);
     let num_cons = num_vars;
     let num_inputs = 10;
-    let (inst, vars, inputs) = Instance::produce_synthetic_r1cs(num_cons, num_vars, num_inputs);
+    let (inst, vars, inputs) = Instance::produce_synthetic_r1cs_lite(num_cons, num_vars, num_inputs);
 
     let gens = NIZKGens::new(num_cons, num_vars, num_inputs);
 

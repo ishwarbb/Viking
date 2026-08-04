@@ -25,8 +25,8 @@ pub fn main() {
     let num_cons = num_vars;
     let num_inputs = 10;
 
-    // produce a synthetic R1CSInstance
-    let (inst, vars, inputs) = Instance::produce_synthetic_r1cs(num_cons, num_vars, num_inputs);
+    // produce a synthetic R1CSLiteInstance
+    let (inst, vars, inputs) = Instance::produce_synthetic_r1cs_lite(num_cons, num_vars, num_inputs);
 
     // produce public generators
     let gens = NIZKGens::new(num_cons, num_vars, num_inputs);

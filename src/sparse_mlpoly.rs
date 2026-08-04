@@ -293,15 +293,16 @@ impl SparseMatPolyCommitmentGens {
     num_nz_entries: usize,
     batch_size: usize,
   ) -> SparseMatPolyCommitmentGens {
+    let num_sparse_polys = batch_size - 1;
     let num_vars_ops =
-      num_nz_entries.next_power_of_two().log_2() + (batch_size * 5).next_power_of_two().log_2();
+      num_nz_entries.next_power_of_two().log_2() + (num_sparse_polys * 5).next_power_of_two().log_2();
     let num_vars_mem = if num_vars_x > num_vars_y {
       num_vars_x
     } else {
       num_vars_y
     } + 1;
     let num_vars_derefs =
-      num_nz_entries.next_power_of_two().log_2() + (batch_size * 2).next_power_of_two().log_2();
+      num_nz_entries.next_power_of_two().log_2() + (num_sparse_polys * 2).next_power_of_two().log_2();
 
     let gens_ops = PolyCommitmentGens::new(num_vars_ops, label);
     let gens_mem = PolyCommitmentGens::new(num_vars_mem, label);
@@ -414,7 +415,7 @@ impl SparseMatPolynomial {
     comb_mem.extend(&col.audit_ts);
 
     MultiSparseMatPolynomialAsDense {
-      batch_size: sparse_polys.len(),
+      batch_size: sparse_polys.len() + 1,
       row,
       col,
       val: val_vec,
@@ -442,10 +443,12 @@ impl SparseMatPolynomial {
     let eval_table_rx = EqPolynomial::new(rx.to_vec()).evals();
     let eval_table_ry = EqPolynomial::new(ry.to_vec()).evals();
 
-    polys
+    let evals_A_B_C = polys
       .iter()
       .map(|poly| poly.evaluate_with_tables(&eval_table_rx, &eval_table_ry))
-      .collect::<Vec<Scalar>>()
+      .collect::<Vec<Scalar>>();
+
+    evals_A_B_C
   }
 
   pub fn multiply_vec(&self, num_rows: usize, num_cols: usize, z: &[Scalar]) -> Vec<Scalar> {
@@ -481,7 +484,7 @@ impl SparseMatPolynomial {
     sparse_polys: &[&SparseMatPolynomial],
     gens: &SparseMatPolyCommitmentGens,
   ) -> (SparseMatPolyCommitment, MultiSparseMatPolynomialAsDense) {
-    let batch_size = sparse_polys.len();
+    let batch_size = sparse_polys.len() + 1;
     let dense = SparseMatPolynomial::multi_sparse_to_dense_rep(sparse_polys);
 
     let (comm_comb_ops, _blinds_comb_ops) = dense.comb_ops.commit(&gens.gens_ops, None);
@@ -1082,9 +1085,9 @@ impl ProductLayerProof {
     col_eval_audit.append_to_transcript(b"claim_col_eval_audit", transcript);
 
     // prepare dotproduct circuit for batching then with ops-related product circuits
-    assert_eq!(eval.len(), derefs.row_ops_val.len());
-    assert_eq!(eval.len(), derefs.col_ops_val.len());
-    assert_eq!(eval.len(), dense.val.len());
+    assert_eq!(eval.len(), derefs.row_ops_val.len() + 1);
+    assert_eq!(eval.len(), derefs.col_ops_val.len() + 1);
+    assert_eq!(eval.len(), dense.val.len() + 1);
     let mut dotp_circuit_left_vec: Vec<DotProductCircuit> = Vec::new();
     let mut dotp_circuit_right_vec: Vec<DotProductCircuit> = Vec::new();
     let mut eval_dotp_left_vec: Vec<Scalar> = Vec::new();
@@ -1116,65 +1119,53 @@ impl ProductLayerProof {
     // So we can produce a batched product proof for all of them at the same time.
     // prove the correctness of claim_row_eval_read, claim_row_eval_write, claim_col_eval_read, and claim_col_eval_write
     // TODO: we currently only produce proofs for 3 batched sparse polynomial evaluations
-    assert_eq!(row_prod_layer.read_vec.len(), 3);
-    let (row_read_A, row_read_B, row_read_C) = {
-      let (vec_A, vec_BC) = row_prod_layer.read_vec.split_at_mut(1);
-      let (vec_B, vec_C) = vec_BC.split_at_mut(1);
-      (vec_A, vec_B, vec_C)
+    assert_eq!(row_prod_layer.read_vec.len(), 2);
+    let (row_read_A, row_read_B) = {
+      let (vec_A, vec_B) = row_prod_layer.read_vec.split_at_mut(1);
+      (vec_A, vec_B)
     };
 
-    let (row_write_A, row_write_B, row_write_C) = {
-      let (vec_A, vec_BC) = row_prod_layer.write_vec.split_at_mut(1);
-      let (vec_B, vec_C) = vec_BC.split_at_mut(1);
-      (vec_A, vec_B, vec_C)
+    let (row_write_A, row_write_B) = {
+      let (vec_A, vec_B) = row_prod_layer.write_vec.split_at_mut(1);
+      (vec_A, vec_B)
     };
 
-    let (col_read_A, col_read_B, col_read_C) = {
-      let (vec_A, vec_BC) = col_prod_layer.read_vec.split_at_mut(1);
-      let (vec_B, vec_C) = vec_BC.split_at_mut(1);
-      (vec_A, vec_B, vec_C)
+    let (col_read_A, col_read_B) = {
+      let (vec_A, vec_B) = col_prod_layer.read_vec.split_at_mut(1);
+      (vec_A, vec_B)
     };
 
-    let (col_write_A, col_write_B, col_write_C) = {
-      let (vec_A, vec_BC) = col_prod_layer.write_vec.split_at_mut(1);
-      let (vec_B, vec_C) = vec_BC.split_at_mut(1);
-      (vec_A, vec_B, vec_C)
+    let (col_write_A, col_write_B) = {
+      let (vec_A, vec_B) = col_prod_layer.write_vec.split_at_mut(1);
+      (vec_A, vec_B)
     };
 
-    let (dotp_left_A, dotp_left_B, dotp_left_C) = {
-      let (vec_A, vec_BC) = dotp_circuit_left_vec.split_at_mut(1);
-      let (vec_B, vec_C) = vec_BC.split_at_mut(1);
-      (vec_A, vec_B, vec_C)
+    let (dotp_left_A, dotp_left_B) = {
+      let (vec_A, vec_B) = dotp_circuit_left_vec.split_at_mut(1);
+      (vec_A, vec_B)
     };
 
-    let (dotp_right_A, dotp_right_B, dotp_right_C) = {
-      let (vec_A, vec_BC) = dotp_circuit_right_vec.split_at_mut(1);
-      let (vec_B, vec_C) = vec_BC.split_at_mut(1);
-      (vec_A, vec_B, vec_C)
+    let (dotp_right_A, dotp_right_B) = {
+      let (vec_A, vec_B) = dotp_circuit_right_vec.split_at_mut(1);
+      (vec_A, vec_B)
     };
 
     let (proof_ops, rand_ops) = ProductCircuitEvalProofBatched::prove(
       &mut [
         &mut row_read_A[0],
         &mut row_read_B[0],
-        &mut row_read_C[0],
         &mut row_write_A[0],
         &mut row_write_B[0],
-        &mut row_write_C[0],
         &mut col_read_A[0],
         &mut col_read_B[0],
-        &mut col_read_C[0],
         &mut col_write_A[0],
         &mut col_write_B[0],
-        &mut col_write_C[0],
       ],
       &mut [
         &mut dotp_left_A[0],
         &mut dotp_right_A[0],
         &mut dotp_left_B[0],
         &mut dotp_right_B[0],
-        &mut dotp_left_C[0],
-        &mut dotp_right_C[0],
       ],
       transcript,
     );
@@ -1232,8 +1223,8 @@ impl ProductLayerProof {
 
     // subset check
     let (row_eval_init, row_eval_read, row_eval_write, row_eval_audit) = &self.eval_row;
-    assert_eq!(row_eval_write.len(), num_instances);
-    assert_eq!(row_eval_read.len(), num_instances);
+    assert_eq!(row_eval_write.len() + 1, num_instances);
+    assert_eq!(row_eval_read.len() + 1, num_instances);
     let ws: Scalar = (0..row_eval_write.len())
       .map(|i| row_eval_write[i])
       .product();
@@ -1247,8 +1238,8 @@ impl ProductLayerProof {
 
     // subset check
     let (col_eval_init, col_eval_read, col_eval_write, col_eval_audit) = &self.eval_col;
-    assert_eq!(col_eval_write.len(), num_instances);
-    assert_eq!(col_eval_read.len(), num_instances);
+    assert_eq!(col_eval_write.len() + 1, num_instances);
+    assert_eq!(col_eval_read.len() + 1, num_instances);
     let ws: Scalar = (0..col_eval_write.len())
       .map(|i| col_eval_write[i])
       .product();
@@ -1262,10 +1253,10 @@ impl ProductLayerProof {
 
     // verify the evaluation of the sparse polynomial
     let (eval_dotp_left, eval_dotp_right) = &self.eval_val;
-    assert_eq!(eval_dotp_left.len(), eval_dotp_left.len());
-    assert_eq!(eval_dotp_left.len(), num_instances);
+    assert_eq!(eval_dotp_left.len(), eval_dotp_right.len());
+    assert_eq!(eval_dotp_left.len() + 1, num_instances);
     let mut claims_dotp_circuit: Vec<Scalar> = Vec::new();
-    for i in 0..num_instances {
+    for i in 0..num_instances - 1 {
       assert_eq!(eval_dotp_left[i] + eval_dotp_right[i], eval[i]);
       eval_dotp_left[i].append_to_transcript(b"claim_eval_dotp_left", transcript);
       eval_dotp_right[i].append_to_transcript(b"claim_eval_dotp_right", transcript);
@@ -1378,12 +1369,12 @@ impl PolyEvalNetworkProof {
       .proof_prod_layer
       .verify(num_ops, num_cells, evals, transcript)?;
     assert_eq!(claims_mem.len(), 4);
-    assert_eq!(claims_ops.len(), 4 * num_instances);
-    assert_eq!(claims_dotp.len(), 3 * num_instances);
+    assert_eq!(claims_ops.len(), 4 * (num_instances - 1));
+    assert_eq!(claims_dotp.len(), 3 * (num_instances - 1));
 
-    let (claims_ops_row, claims_ops_col) = claims_ops.split_at_mut(2 * num_instances);
-    let (claims_ops_row_read, claims_ops_row_write) = claims_ops_row.split_at_mut(num_instances);
-    let (claims_ops_col_read, claims_ops_col_write) = claims_ops_col.split_at_mut(num_instances);
+    let (claims_ops_row, claims_ops_col) = claims_ops.split_at_mut(2 * (num_instances - 1));
+    let (claims_ops_row_read, claims_ops_row_write) = claims_ops_row.split_at_mut(num_instances - 1);
+    let (claims_ops_col_read, claims_ops_col_write) = claims_ops_col.split_at_mut(num_instances - 1);
 
     // verify the proof of hash layer
     self.proof_hash_layer.verify(
@@ -1629,7 +1620,10 @@ mod tests {
     );
 
     // commitment
-    let (poly_comm, dense) = SparseMatPolynomial::multi_commit(&[&poly_M, &poly_M, &poly_M], &gens);
+    // The R1CS-Lite variant of the sparse-poly evaluation proof works with N real sparse
+    // matrices plus one "ghost" evaluation (sumcheck batch_size = sparse_polys.len() + 1).
+    // We therefore commit to 2 matrices but supply 3 evaluations below.
+    let (poly_comm, dense) = SparseMatPolynomial::multi_commit(&[&poly_M, &poly_M], &gens);
 
     // evaluation
     let rx: Vec<Scalar> = (0..num_vars_x)

@@ -25,7 +25,7 @@ impl Display for ProofVerifyError {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub enum R1CSError {
+pub enum R1CSLiteError {
   /// returned if the number of constraints is not a power of 2
   NonPowerOfTwoCons,
   /// returned if the number of variables is not a power of 2
