@@ -210,7 +210,7 @@ impl R1CSLiteInstance {
     for i in 0..num_cons {
       let A_idx = i % size_z;
       A.push(SparseMatEntry::new(i, A_idx, one));
-      
+
       let B_idx = (i + 2) % size_z;
       let z_idx = (i) % size_z;
 
@@ -218,11 +218,14 @@ impl R1CSLiteInstance {
       let B_val = Z[B_idx];
       let z_val = Z[z_idx];
 
-
       if A_val * B_val == Scalar::zero() {
         B.push(SparseMatEntry::new(i, B_idx, one));
       } else {
-        B.push(SparseMatEntry::new(i, B_idx, z_val * (A_val * B_val).invert().unwrap()));
+        B.push(SparseMatEntry::new(
+          i,
+          B_idx,
+          z_val * (A_val * B_val).invert().unwrap(),
+        ));
       }
     }
 
@@ -277,7 +280,7 @@ impl R1CSLiteInstance {
     assert_eq!(vars.len(), self.num_unpadded_vars);
     assert_eq!(input.len(), self.num_inputs);
 
-    let unpad_z =  self.extend_one_input(vars.to_vec(), input);
+    let unpad_z = self.extend_one_input(vars.to_vec(), input);
     let z = {
       let padded_z = self.pad(vars.to_vec());
       self.extend_one_input(padded_z, input)
@@ -329,7 +332,7 @@ impl R1CSLiteInstance {
     (
       DensePolynomial::new(self.A.multiply_vec(num_rows, num_cols, z)),
       DensePolynomial::new(self.B.multiply_vec(num_rows, num_cols, z)),
-      DensePolynomial::new(z_new)
+      DensePolynomial::new(z_new),
     )
   }
 
@@ -382,7 +385,10 @@ impl R1CSLiteInstance {
     SparseMatPolynomial::multi_evaluate(&[&sparse_C], rx, ry)[0]
   }
 
-  pub fn commit(&self, gens: &R1CSLiteCommitmentGens) -> (R1CSLiteCommitment, R1CSLiteDecommitment) {
+  pub fn commit(
+    &self,
+    gens: &R1CSLiteCommitmentGens,
+  ) -> (R1CSLiteCommitment, R1CSLiteDecommitment) {
     let (comm, dense) = SparseMatPolynomial::multi_commit(&[&self.A, &self.B], &gens.gens);
     let r1cs_lite_comm = R1CSLiteCommitment {
       num_cons: self.num_cons,

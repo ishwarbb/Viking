@@ -1,4 +1,3 @@
-
 #![allow(clippy::too_many_arguments)]
 use super::commitments::{Commitments, MultiCommitGens};
 use super::dense_mlpoly::{
@@ -275,8 +274,7 @@ impl R1CSLiteProof {
         inst.compute_eval_table_sparse(inst.get_num_cons(), z.len(), &evals_rx);
 
       let mut evals_C = vec![Scalar::zero(); z.len()];
-      (0..inst.get_num_unpadded_vars())
-        .for_each(|i| evals_C[i] += evals_rx[i] * Scalar::one());
+      (0..inst.get_num_unpadded_vars()).for_each(|i| evals_C[i] += evals_rx[i] * Scalar::one());
       let gap = inst.get_num_vars() - inst.get_num_unpadded_vars();
       (inst.get_num_unpadded_vars()..inst.get_num_unpadded_cons())
         .for_each(|i| evals_C[i + gap] += evals_rx[i] * Scalar::one());
@@ -285,9 +283,7 @@ impl R1CSLiteProof {
       assert_eq!(evals_A.len(), evals_C.len());
 
       (0..evals_A.len())
-      .map(|i| {
-        r_A * evals_A[i] + r_B * evals_B[i] + r_z * evals_C[i]
-        })
+        .map(|i| r_A * evals_A[i] + r_B * evals_B[i] + r_z * evals_C[i])
         .collect::<Vec<Scalar>>()
     };
 
@@ -300,7 +296,7 @@ impl R1CSLiteProof {
       &mut DensePolynomial::new(evals_ABz),
       &gens.gens_sc,
       transcript,
-      random_tape,  
+      random_tape,
     );
     timer_sc_proof_phase2.stop();
 
@@ -556,7 +552,15 @@ mod tests {
     A.push((7, constant, one));
     B.push((7, input_1, one));
 
-    let inst = R1CSLiteInstance::new(num_cons, num_vars, num_inputs, &A, &B, num_unpadded_cons, num_unpadded_vars);
+    let inst = R1CSLiteInstance::new(
+      num_cons,
+      num_vars,
+      num_inputs,
+      &A,
+      &B,
+      num_unpadded_cons,
+      num_unpadded_vars,
+    );
 
     // compute a satisfying assignment
     let mut csprng: OsRng = OsRng;
@@ -601,7 +605,8 @@ mod tests {
     let num_vars = 1024;
     let num_cons = num_vars;
     let num_inputs = 10;
-    let (inst, vars, input) = R1CSLiteInstance::produce_synthetic_r1cs_lite(num_cons, num_vars, num_inputs);
+    let (inst, vars, input) =
+      R1CSLiteInstance::produce_synthetic_r1cs_lite(num_cons, num_vars, num_inputs);
 
     let gens = R1CSLiteGens::new(b"test-m", num_cons, num_vars);
 
@@ -618,7 +623,6 @@ mod tests {
 
     let inst_evals = inst.evaluate(&rx, &ry);
     let inst_evals_ab = (inst_evals.0, inst_evals.1);
-
 
     let mut verifier_transcript = Transcript::new(b"example");
     assert!(proof

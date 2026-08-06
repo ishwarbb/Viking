@@ -25,7 +25,8 @@ pub fn main() {
     let num_inputs = 10;
 
     // produce a synthetic R1CSLiteInstance
-    let (inst, vars, inputs) = Instance::produce_synthetic_r1cs_lite(num_cons, num_vars, num_inputs);
+    let (inst, vars, inputs) =
+      Instance::produce_synthetic_r1cs_lite(num_cons, num_vars, num_inputs);
 
     // produce public generators
     let gens = SNARKGens::new(num_cons, num_vars, num_inputs, num_cons);

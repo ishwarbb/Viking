@@ -35,7 +35,8 @@ use core::cmp::max;
 use errors::{ProofVerifyError, R1CSLiteError};
 use merlin::Transcript;
 use r1csliteinstance::{
-  R1CSLiteCommitment, R1CSLiteCommitmentGens, R1CSLiteDecommitment, R1CSLiteEvalProof, R1CSLiteInstance,
+  R1CSLiteCommitment, R1CSLiteCommitmentGens, R1CSLiteDecommitment, R1CSLiteEvalProof,
+  R1CSLiteInstance,
 };
 use r1csliteproof::{R1CSLiteGens, R1CSLiteProof};
 use random::RandomTape;
@@ -239,11 +240,7 @@ impl Instance {
       return Err(R1CSLiteError::InvalidNumberOfInputs);
     }
 
-    Ok(
-      self
-        .inst
-        .is_sat(&vars.assignment, &inputs.assignment),
-    )
+    Ok(self.inst.is_sat(&vars.assignment, &inputs.assignment))
   }
 
   /// Constructs a new synthetic R1CS `Instance` and an associated satisfying assignment
@@ -252,7 +249,8 @@ impl Instance {
     num_vars: usize,
     num_inputs: usize,
   ) -> (Instance, VarsAssignment, InputsAssignment) {
-    let (inst, vars, inputs) = R1CSLiteInstance::produce_synthetic_r1cs_lite(num_cons, num_vars, num_inputs);
+    let (inst, vars, inputs) =
+      R1CSLiteInstance::produce_synthetic_r1cs_lite(num_cons, num_vars, num_inputs);
     let digest = inst.get_digest();
     (
       Instance { inst, digest },
@@ -365,7 +363,10 @@ impl SNARK {
       };
 
       let proof_encoded: Vec<u8> = bincode::serialize(&proof).unwrap();
-      Timer::print(&format!("len_r1cs_lite_sat_proof {:?}", proof_encoded.len()));
+      Timer::print(&format!(
+        "len_r1cs_lite_sat_proof {:?}",
+        proof_encoded.len()
+      ));
 
       (proof, rx, ry)
     };
@@ -394,7 +395,10 @@ impl SNARK {
       );
 
       let proof_encoded: Vec<u8> = bincode::serialize(&proof).unwrap();
-      Timer::print(&format!("len_r1cs_lite_eval_proof {:?}", proof_encoded.len()));
+      Timer::print(&format!(
+        "len_r1cs_lite_eval_proof {:?}",
+        proof_encoded.len()
+      ));
       proof
     };
 
@@ -533,7 +537,10 @@ impl NIZK {
         &mut random_tape,
       );
       let proof_encoded: Vec<u8> = bincode::serialize(&proof).unwrap();
-      Timer::print(&format!("len_r1cs_lite_sat_proof {:?}", proof_encoded.len()));
+      Timer::print(&format!(
+        "len_r1cs_lite_sat_proof {:?}",
+        proof_encoded.len()
+      ));
       (proof, rx, ry)
     };
 
@@ -602,7 +609,8 @@ mod tests {
     let gens = SNARKGens::new(num_cons, num_vars, num_inputs, num_cons);
 
     // produce a synthetic R1CSLiteInstance
-    let (inst, vars, inputs) = Instance::produce_synthetic_r1cs_lite(num_cons, num_vars, num_inputs);
+    let (inst, vars, inputs) =
+      Instance::produce_synthetic_r1cs_lite(num_cons, num_vars, num_inputs);
 
     // create a commitment to R1CSLiteInstance
     let (comm, decomm) = SNARK::encode(&inst, &gens);

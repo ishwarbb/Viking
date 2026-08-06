@@ -1,12 +1,14 @@
 [package]
 name = "spartan"
 version = "0.8.0"
-authors = ["Srinath Setty <srinath@microsoft.com>"]
+authors = [
+    "Srinath Setty <srinath@microsoft.com>",
+    "Ishwar B Balappanawar",
+]
 edition = "2021"
-description = "High-speed zkSNARKs without trusted setup"
-documentation = "https://docs.rs/spartan/"
+description = "Transparent zkSNARK using the R1CS-Lite constraint system; a fork of Spartan"
 readme = "README.md"
-repository = "https://github.com/microsoft/Spartan"
+repository = "https://github.com/ishwarbb/Viking"
 license-file = "LICENSE"
 keywords = ["zkSNARKs", "cryptography", "proofs"]
 

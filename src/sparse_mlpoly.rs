@@ -294,15 +294,15 @@ impl SparseMatPolyCommitmentGens {
     batch_size: usize,
   ) -> SparseMatPolyCommitmentGens {
     let num_sparse_polys = batch_size - 1;
-    let num_vars_ops =
-      num_nz_entries.next_power_of_two().log_2() + (num_sparse_polys * 5).next_power_of_two().log_2();
+    let num_vars_ops = num_nz_entries.next_power_of_two().log_2()
+      + (num_sparse_polys * 5).next_power_of_two().log_2();
     let num_vars_mem = if num_vars_x > num_vars_y {
       num_vars_x
     } else {
       num_vars_y
     } + 1;
-    let num_vars_derefs =
-      num_nz_entries.next_power_of_two().log_2() + (num_sparse_polys * 2).next_power_of_two().log_2();
+    let num_vars_derefs = num_nz_entries.next_power_of_two().log_2()
+      + (num_sparse_polys * 2).next_power_of_two().log_2();
 
     let gens_ops = PolyCommitmentGens::new(num_vars_ops, label);
     let gens_mem = PolyCommitmentGens::new(num_vars_mem, label);
@@ -1373,8 +1373,10 @@ impl PolyEvalNetworkProof {
     assert_eq!(claims_dotp.len(), 3 * (num_instances - 1));
 
     let (claims_ops_row, claims_ops_col) = claims_ops.split_at_mut(2 * (num_instances - 1));
-    let (claims_ops_row_read, claims_ops_row_write) = claims_ops_row.split_at_mut(num_instances - 1);
-    let (claims_ops_col_read, claims_ops_col_write) = claims_ops_col.split_at_mut(num_instances - 1);
+    let (claims_ops_row_read, claims_ops_row_write) =
+      claims_ops_row.split_at_mut(num_instances - 1);
+    let (claims_ops_col_read, claims_ops_col_write) =
+      claims_ops_col.split_at_mut(num_instances - 1);
 
     // verify the proof of hash layer
     self.proof_hash_layer.verify(

@@ -30,7 +30,7 @@ See [Viking_Report.pdf](Viking_Report.pdf) for the original theoretical and tech
 
 ## Highlights
 
-We now highlight Spartan's distinctive features.
+Viking inherits Spartan's core properties and adds R1CS-Lite support.
 
 - **No "toxic" waste:** Spartan is a _transparent_ zkSNARK and does not require a trusted setup. So, it does not involve any trapdoors that must be kept secret or require a multi-party ceremony to produce public parameters.
 
@@ -298,8 +298,8 @@ rustup default nightly
 Clone the repository:
 
 ```text
-git clone https://github.com/Microsoft/Spartan
-cd Spartan
+git clone https://github.com/ishwarbb/Viking
+cd Viking
 ```
 
 To build docs for public APIs of `libspartan`:

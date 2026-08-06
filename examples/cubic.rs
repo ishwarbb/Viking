@@ -45,7 +45,7 @@ fn r1cs_lite() -> (
   // For now, C will be identity - Just testing out the correctness of our R1CSLite instance for y = x^16 + 1
 
   // Constraint 0 is x * 1 = x
-  A.push((0, 0,        one));
+  A.push((0, 0, one));
   B.push((0, num_vars, one));
 
   // Constraint 1 is x * x = a
@@ -78,10 +78,10 @@ fn r1cs_lite() -> (
   // compute a satisfying assignment
   let mut csprng: OsRng = OsRng;
   let z0 = Scalar::random(&mut csprng);
-  let z1 = z0 * z0;          // constraint 2
-  let z2 = z1 * z1;          // constraint 3
-  let z3 = z2 * z2;          // constraint 4
-  let z4 = z3 * z3;          // constraint 5
+  let z1 = z0 * z0; // constraint 2
+  let z2 = z1 * z1; // constraint 3
+  let z3 = z2 * z2; // constraint 4
+  let z4 = z3 * z3; // constraint 5
   let i0 = z4 + Scalar::ONE; // constraint 6
 
   // create a VarsAssignment
@@ -162,8 +162,8 @@ fn r1cs() -> (
 
   // Constraint 4 is (d + 1) * 1 = y
   A.push((4, 4, one));
-  A.push((4, num_vars,     one));
-  B.push((4, num_vars,     one));
+  A.push((4, num_vars, one));
+  B.push((4, num_vars, one));
   C.push((4, num_vars + 1, one));
 
   let inst = Instance::new(num_cons, num_vars, num_inputs, &A, &B).unwrap();
@@ -171,10 +171,10 @@ fn r1cs() -> (
   // compute a satisfying assignment
   let mut csprng: OsRng = OsRng;
   let z0 = Scalar::random(&mut csprng);
-  let z1 = z0 * z0;          // constraint 2
-  let z2 = z1 * z1;          // constraint 3
-  let z3 = z2 * z2;          // constraint 4
-  let z4 = z3 * z3;          // constraint 5
+  let z1 = z0 * z0; // constraint 2
+  let z2 = z1 * z1; // constraint 3
+  let z3 = z2 * z2; // constraint 4
+  let z4 = z3 * z3; // constraint 5
   let i0 = z4 + Scalar::ONE; // constraint 6
 
   // create a VarsAssignment
